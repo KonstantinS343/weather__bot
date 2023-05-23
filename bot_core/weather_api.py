@@ -1,4 +1,3 @@
-import requests
 from enum import IntEnum
 from typing import NamedTuple, Dict
 from datetime import datetime
@@ -39,14 +38,16 @@ async def weather_by_input(location: str,  weather_api_key: str) -> WeatherData:
     return weather
 
 async def _openweather_response_by_input(location: str,  weather_api_key: str) -> str:
-    openweather_url = f'http://api.openweathermap.org/data/2.5/weather?q={location}&lang=ru&units=metric&lang=ru&appid={weather_api_key}'
+    openweather_url = f'http://api.openweathermap.org/data/2.5/weather?q={location}'
+    f'&lang=ru&units=metric&lang=ru&appid={weather_api_key}'
     async with aiohttp.ClientSession() as session:
         async with session.get(openweather_url) as response:
             weather_response = await response.text()
             return weather_response
 
 async def _openweather_response_by_ip(coordinates: Coordinates, weather_api_key: str) -> str:
-    openweather_url = f'https://api.openweathermap.org/data/2.5/weather?lat={coordinates.latitude}&lon={coordinates.longitude}&lang=ru&appid={weather_api_key}&units=metric'
+    openweather_url = f'https://api.openweathermap.org/data/2.5/weather?lat={coordinates.latitude}'
+    f'&lon={coordinates.longitude}&lang=ru&appid={weather_api_key}&units=metric'
     async with aiohttp.ClientSession() as session:
         async with session.get(openweather_url) as response:
             weather_response = await response.text()
@@ -61,8 +62,8 @@ def _parse_response_openweather(weather: str) -> WeatherData:
         description = _parse_description(weather),
         wind_speed = _parse_wind_speed(weather),
         wind_derection = _parse_wind_derection(weather),
-        sunrise = _parse_sunrise(weather),
-        sunset = _parse_sunset(weather)
+        sunrise = _parse_sun_time(weather, 'sunrise'),
+        sunset = _parse_sun_time(weather, 'sunset')
     )
 
 def _parse_location(weather: Dict[str, str]) -> str:
@@ -85,10 +86,7 @@ def _parse_wind_derection(weather: Dict[str, str]) -> int:
     degree = round(degree / 45) * 45
     if degree == 360:
         degree = 0
-    return degree
+    return WindDirection(degree).name
     
-def _parse_sunrise(weather: Dict[str, str]) -> datetime:
-    return weather['sys']['sunrise']
-
-def _parse_sunset(weather: Dict[str, str]) -> datetime:
-    return weather['sys']['sunset']
+def _parse_sun_time(weather: Dict[str, str], time_type: str) -> datetime:
+    return datetime.fromtimestamp(weather['sys'][time_type])
