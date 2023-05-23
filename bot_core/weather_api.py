@@ -33,8 +33,20 @@ async def weather_by_ip(coordinates: Coordinates, weather_api_key: str) -> Weath
     weather = _parse_response_openweather(openweather)
     return weather
 
+async def weather_by_input(location: str,  weather_api_key: str) -> WeatherData:
+    openweather = await _openweather_response_by_input(location, weather_api_key)
+    weather = _parse_response_openweather(openweather)
+    return weather
+
+async def _openweather_response_by_input(location: str,  weather_api_key: str) -> str:
+    openweather_url = f'http://api.openweathermap.org/data/2.5/weather?q={location}&lang=ru&units=metric&lang=ru&appid={weather_api_key}'
+    async with aiohttp.ClientSession() as session:
+        async with session.get(openweather_url) as response:
+            weather_response = await response.text()
+            return weather_response
+
 async def _openweather_response_by_ip(coordinates: Coordinates, weather_api_key: str) -> str:
-    openweather_url = f'https://api.openweathermap.org/data/2.5/weather?lat={coordinates.latitude}&lon={coordinates.longitude}&appid={weather_api_key}&units=metric'
+    openweather_url = f'https://api.openweathermap.org/data/2.5/weather?lat={coordinates.latitude}&lon={coordinates.longitude}&lang=ru&appid={weather_api_key}&units=metric'
     async with aiohttp.ClientSession() as session:
         async with session.get(openweather_url) as response:
             weather_response = await response.text()
