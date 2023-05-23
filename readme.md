@@ -10,7 +10,7 @@ To get a telegram bot token, you need to contact the [BotFather](https://t.me/Bo
     cd tg_bot/bot_core
     true > .env
     nano .env 
-Insert your telegram token in the format `TELEGRAM=your_telegram_token`, after saving the file `Ctrl+S` and exiting `Ctrl+X'.
+Insert your telegram token in the format `TELEGRAM=your_telegram_token`, after saving the file `Ctrl+S` and exiting `Ctrl+X`.
 
 # **Project launch**
     poetry run start
