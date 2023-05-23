@@ -11,5 +11,5 @@ To get a telegram bot token, you need to contact the [BotFather](https://t.me/Bo
     export WEATHER=your_weather_api_key
 
 # **Project launch**
-    poetry run bot_start
+    poetry run start
 

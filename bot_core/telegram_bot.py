@@ -5,10 +5,10 @@ import logging
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor 
+from dotenv import load_dotenv
+load_dotenv(os.path.dirname(__file__) + '/.env')
 
 logging.basicConfig(level=logging.INFO)
-
-
 
 def start_point():
     print('Bot is running!')

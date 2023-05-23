@@ -1,4 +1,0 @@
-#!/usr/bin/env python3.10
-from bot_core.telegram_bot import start_point
-print('Bot is starting...')
-start_point()
