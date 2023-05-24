@@ -29,12 +29,16 @@ class WeatherData(NamedTuple):
 
 async def weather_by_ip(coordinates: Coordinates, weather_api_key: str) -> WeatherData:
     openweather = await _openweather_response_by_ip(coordinates, weather_api_key)
-    weather = _parse_response_openweather(openweather)
+    weather_in_dict = json.loads(openweather)
+    weather = _parse_response_openweather(weather_in_dict)
     return weather
 
-async def weather_by_input(location: str,  weather_api_key: str) -> WeatherData:
+async def weather_by_input(location: str,  weather_api_key: str) -> WeatherData|None:
     openweather = await _openweather_response_by_input(location, weather_api_key)
-    weather = _parse_response_openweather(openweather)
+    weather_in_dict = json.loads(openweather)
+    if weather_in_dict['cod'] == '404':
+        return None
+    weather = _parse_response_openweather(weather_in_dict)
     return weather
 
 async def _openweather_response_by_input(location: str,  weather_api_key: str) -> str:
@@ -51,8 +55,7 @@ async def _openweather_response_by_ip(coordinates: Coordinates, weather_api_key:
             weather_response = await response.text()
             return weather_response
 
-def _parse_response_openweather(weather: str) -> WeatherData:
-    weather = json.loads(weather)
+def _parse_response_openweather(weather: Dict[str,str]) -> WeatherData:
     return WeatherData(
         location = _parse_location(weather),
         temperature = _parse_temperature(weather),
