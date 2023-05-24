@@ -14,7 +14,7 @@ from bot_core.message_type import get_weather_by_ip, get_weather_by_input, \
     get_wind_data, get_sun_time
 import bot_core.bot_buttons as button
 from bot_core.coordinates import Coordinates
-from bot_core.service import db_init
+from bot_core.service import db_init, insert_data_into_db
 
 load_dotenv(os.path.dirname(__file__) + '/.env')
 logging.basicConfig(level=logging.INFO)
@@ -35,7 +35,11 @@ dp = Dispatcher(bot, storage=storage)
 @dp.message_handler(commands=['weather'])
 async def start_command(message: types.Message):
     if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
-        await message.answer(text=await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+        weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'weather', message.chat.id)
+        wind_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'wind', message.chat.id)
+        sun_time_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'suntime', message.chat.id)
+        await message.answer(text=weather, reply_markup = button.WEATHER)
+        await insert_data_into_db(LOCATION, weather, wind_weather, sun_time_weather, message.chat.id)
     else:
         await message.answer('Поделитесь своим местоположением')
     
@@ -63,21 +67,33 @@ async def process_location(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=['wind'])
 async def wind(message: types.Message):
     if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
-        await message.answer(text=await get_wind_data(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WIND)
+        weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'weather')
+        wind_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'wind')
+        sun_time_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'suntime')
+        await message.answer(text=wind_weather, reply_markup = button.WIND)
+        await insert_data_into_db(LOCATION, weather, wind_weather, sun_time_weather, message.chat.id)
     else:
         await message.answer('Поделитесь своим местоположением')
 
 @dp.message_handler(commands=['suntime'])
 async def sun_time(message: types.Message):
     if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
-        await message.answer(text=await get_sun_time(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.SUN_TIME)
+        weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'weather')
+        wind_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'wind')
+        sun_time_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'suntime')
+        await message.answer(text=sun_time_weather, reply_markup = button.SUN_TIME)
+        await insert_data_into_db(LOCATION, weather, wind_weather, sun_time_weather, message.chat.id)
     else:
         await message.answer('Поделитесь своим местоположением')
   
 @dp.callback_query_handler(text='weather')
 async def callback_weather(callback_query: types.CallbackQuery):
     if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
-        await callback_query.message.answer(text=await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+        weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'weather')
+        wind_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'wind')
+        sun_time_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'suntime')
+        await callback_query.message.answer(text=weather, reply_markup = button.WEATHER)
+        await insert_data_into_db(LOCATION, weather, wind_weather, sun_time_weather, callback_query.message.chat.id)
     else:
         await callback_query.message.answer('Поделитесь своим местоположением')
     await callback_query.answer()
@@ -85,7 +101,11 @@ async def callback_weather(callback_query: types.CallbackQuery):
 @dp.callback_query_handler(text='wind')
 async def callback_wind(callback_query: types.CallbackQuery):
     if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
-        await callback_query.message.answer(text=await get_wind_data(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WIND)
+        weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'weather')
+        wind_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'wind')
+        sun_time_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'suntime')
+        await callback_query.message.answer(text=wind_weather, reply_markup = button.WIND)
+        await insert_data_into_db(LOCATION, weather, wind_weather, sun_time_weather, callback_query.message.chat.id)
     else:
         await callback_query.message.answer('Поделитесь своим местоположением')
     await callback_query.answer()
@@ -94,7 +114,11 @@ async def callback_wind(callback_query: types.CallbackQuery):
 @dp.callback_query_handler(text='suntime')
 async def callback_sun_time(callback_query: types.CallbackQuery):
     if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
-        await callback_query.message.answer(text=await get_sun_time(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.SUN_TIME)
+        weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'weather')
+        wind_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'wind')
+        sun_time_weather = await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI'), 'suntime')
+        await callback_query.message.answer(text=sun_time_weather, reply_markup = button.SUN_TIME)
+        await insert_data_into_db(LOCATION, weather, wind_weather, sun_time_weather, callback_query.message.chat.id)
     else:
         await callback_query.message.answer('Поделитесь своим местоположением')
     await callback_query.answer()
@@ -128,8 +152,10 @@ async def handle_location(message: types.Message):
     temp = Coordinates(latitude=message.location.latitude, longitude=message.location.longitude)
     global LOCATION
     LOCATION = temp
+    logging.info(LOCATION.latitude)
+    logging.info(LOCATION.longitude)
     await message.answer(text=await get_weather_by_ip(Coordinates(latitude=message.location.latitude, longitude=message.location.longitude),
-                                                      os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+                                                      os.getenv('WEATHERAPI'), 'weather', message.chat.id), reply_markup = button.WEATHER)
 
 @dp.message_handler(commands=['start'])
 async def cmd_locate_me(message: types.Message):

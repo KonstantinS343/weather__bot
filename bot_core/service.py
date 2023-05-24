@@ -1,6 +1,7 @@
 import sqlite3
-import aiohttp, asyncio
 import logging
+from bot_core.coordinates import Coordinates
+from datetime import datetime
 
 async def db_init(logging: logging) -> None:
     connection_to_db = await create_connection(logging)
@@ -39,3 +40,17 @@ async def create_table(connection_to_db: sqlite3.Connection, logging: logging) -
     
     return cursor
 
+async def insert_data_into_db(location: Coordinates, weather: str, wind: str, sun_time: str, user_id: int):
+    connection_to_db = await create_connection(logging)
+    cursor = await create_table(connection_to_db, logging)
+    cursor.execute("""insert into users values(?, ?, ?, ?, ?, ?, ?);""", (user_id, location.latitude, location.longitude, weather, wind, sun_time, datetime.now()))
+    connection_to_db.commit()
+    
+async def take_update(user_id: int):
+    print(user_id)
+    connection_to_db = await create_connection(logging)
+    cursor = await create_table(connection_to_db, logging)
+    cursor.execute('select * from users where userid is 759867694;')
+    row = cursor.fetchall()
+    print(row)
+    return 100
