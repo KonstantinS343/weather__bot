@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from bot_core.message_type import get_weather_by_ip, get_weather_by_input, \
     get_wind_data, get_sun_time
 import bot_core.bot_buttons as button
+from bot_core.coordinates import Coordinates
 
 load_dotenv(os.path.dirname(__file__) + '/.env')
 logging.basicConfig(level=logging.INFO)
@@ -23,14 +24,19 @@ def start_point():
 
 class Location(StatesGroup):
     location = State()
+
+LOCATION = Coordinates(0.0, 0.0)
     
 storage = MemoryStorage()
-bot = Bot(token=os.getenv('TELEGRAM'))
+bot = Bot(token=os.getenv('TELEGRAM'), parse_mode="html")
 dp = Dispatcher(bot, storage=storage)
 
-@dp.message_handler(commands=['start', 'weather'])
+@dp.message_handler(commands=['weather'])
 async def start_command(message: types.Message):
-    await message.answer(text=await get_weather_by_ip(os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+    if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
+        await message.answer(text=await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+    else:
+        await message.answer('Поделитесь своим местоположением')
     
 @dp.message_handler(commands=['location'])
 async def input_location(message: types.Message):
@@ -55,26 +61,41 @@ async def process_location(message: types.Message, state: FSMContext):
     
 @dp.message_handler(commands=['wind'])
 async def wind(message: types.Message):
-    await message.answer(text=await get_wind_data(os.getenv('WEATHERAPI')), reply_markup = button.WIND)
+    if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
+        await message.answer(text=await get_wind_data(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WIND)
+    else:
+        await message.answer('Поделитесь своим местоположением')
 
 @dp.message_handler(commands=['suntime'])
 async def sun_time(message: types.Message):
-    await message.answer(text=await get_sun_time(os.getenv('WEATHERAPI')), reply_markup = button.SUN_TIME)
+    if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
+        await message.answer(text=await get_sun_time(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.SUN_TIME)
+    else:
+        await message.answer('Поделитесь своим местоположением')
   
 @dp.callback_query_handler(text='weather')
 async def callback_weather(callback_query: types.CallbackQuery):
-    await callback_query.message.answer(text=await get_weather_by_ip(os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+    if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
+        await callback_query.message.answer(text=await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+    else:
+        await callback_query.message.answer('Поделитесь своим местоположением')
     await callback_query.answer()
   
 @dp.callback_query_handler(text='wind')
 async def callback_wind(callback_query: types.CallbackQuery):
-    await callback_query.message.answer(text=await get_wind_data(os.getenv('WEATHERAPI')), reply_markup = button.WIND)
+    if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
+        await callback_query.message.answer(text=await get_wind_data(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WIND)
+    else:
+        await callback_query.message.answer('Поделитесь своим местоположением')
     await callback_query.answer()
 
 
 @dp.callback_query_handler(text='suntime')
 async def callback_sun_time(callback_query: types.CallbackQuery):
-    await callback_query.message.answer(text=await get_sun_time(os.getenv('WEATHERAPI')), reply_markup = button.SUN_TIME)
+    if not LOCATION.latitude == 0.0 and not LOCATION.longitude == 0.0:
+        await callback_query.message.answer(text=await get_sun_time(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.SUN_TIME)
+    else:
+        await callback_query.message.answer('Поделитесь своим местоположением')
     await callback_query.answer()
 
 @dp.message_handler(commands='help')
@@ -97,6 +118,19 @@ async def callback_cancel_handler(callback_query: types.CallbackQuery, state: FS
         return
 
     logging.info('Cancelling state %r', current_state)
-    await callback_query.message.answer(text=await get_weather_by_ip(os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+    await callback_query.message.answer(text=await get_weather_by_ip(LOCATION, os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
     await callback_query.answer()
     await state.finish()
+
+@dp.message_handler(content_types=['location'])
+async def handle_location(message: types.Message):
+    temp = Coordinates(latitude=message.location.latitude, longitude=message.location.longitude)
+    global LOCATION
+    LOCATION = temp
+    await message.answer(text=await get_weather_by_ip(Coordinates(latitude=message.location.latitude, longitude=message.location.longitude),
+                                                      os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
+
+@dp.message_handler(commands=[''])
+async def cmd_locate_me(message: types.Message):
+    reply = "Нажмите на кнопку,чтобы поделить своим местоположением"
+    await message.answer(reply, reply_markup=button.BUTTON_GET_LOCATION)
