@@ -14,6 +14,7 @@ from bot_core.message_type import get_weather_by_ip, get_weather_by_input, \
     get_wind_data, get_sun_time
 import bot_core.bot_buttons as button
 from bot_core.coordinates import Coordinates
+from bot_core.service import db_init
 
 load_dotenv(os.path.dirname(__file__) + '/.env')
 logging.basicConfig(level=logging.INFO)
@@ -130,7 +131,12 @@ async def handle_location(message: types.Message):
     await message.answer(text=await get_weather_by_ip(Coordinates(latitude=message.location.latitude, longitude=message.location.longitude),
                                                       os.getenv('WEATHERAPI')), reply_markup = button.WEATHER)
 
-@dp.message_handler(commands=[''])
+@dp.message_handler(commands=['start'])
 async def cmd_locate_me(message: types.Message):
+    await db_init(logging)
     reply = "Нажмите на кнопку,чтобы поделить своим местоположением"
     await message.answer(reply, reply_markup=button.BUTTON_GET_LOCATION)
+
+
+
+    
