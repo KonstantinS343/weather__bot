@@ -3,23 +3,26 @@ import logging
 from bot_core.coordinates import Coordinates
 from datetime import datetime
 
+
 async def db_init(logging: logging) -> None:
     connection_to_db = await create_connection(logging)
-    
-    if not connection_to_db == None:
+
+    if connection_to_db is not None:
         await create_table(connection_to_db, logging)
 
-async def create_connection(logging: logging) -> sqlite3.Connection|None:
+
+async def create_connection(logging: logging) -> sqlite3.Connection | None:
     connection_to_db = None
     try:
         connection_to_db = sqlite3.connect('sql.db')
         return connection_to_db
     except ConnectionError as e:
         logging.info(e)
-    
+
     return connection_to_db
 
-async def create_table(connection_to_db: sqlite3.Connection, logging: logging) -> sqlite3.Cursor|None:
+
+async def create_table(connection_to_db: sqlite3.Connection, logging: logging) -> sqlite3.Cursor | None:
     cursor = None
     try:
         cursor = connection_to_db.cursor()
@@ -35,8 +38,9 @@ async def create_table(connection_to_db: sqlite3.Connection, logging: logging) -
         connection_to_db.commit()
     except BaseException as e:
         logging.info(e)
-    
+
     return cursor
+
 
 async def insert_or_update_data_into_db(location: Coordinates, weather: str, user_id: int):
     connection_to_db = await create_connection(logging)
@@ -45,11 +49,23 @@ async def insert_or_update_data_into_db(location: Coordinates, weather: str, use
     cursor.execute(request)
     row = cursor.fetchall()
     if not row:
-        cursor.execute("""insert into users values(?, ?, ?, ?, ?);""", (user_id, location.latitude, location.longitude, weather, datetime.now()))
+        cursor.execute(
+            """insert into users values(?, ?, ?, ?, ?);""",
+            (user_id,
+             location.latitude,
+             location.longitude,
+             weather,
+             datetime.now()))
     else:
-        cursor.execute("""update users set user_latitude=?, user_longitude=?, current_weather=?, weather_time_request=?""", (location.latitude, location.longitude, weather, datetime.now()))
+        cursor.execute(
+            """update users set user_latitude=?, user_longitude=?, current_weather=?, weather_time_request=?""",
+            (location.latitude,
+             location.longitude,
+             weather,
+             datetime.now()))
     connection_to_db.commit()
-    
+
+
 async def take_update(user_id: int) -> datetime:
     connection_to_db = await create_connection(logging)
     cursor = await create_table(connection_to_db, logging)
@@ -60,7 +76,8 @@ async def take_update(user_id: int) -> datetime:
     time = datetime.strptime(row[0][-1], '%Y-%m-%d %H:%M:%S.%f')
     return time
 
-async def get_user_location(user_id: int) -> Coordinates|None:
+
+async def get_user_location(user_id: int) -> Coordinates | None:
     connection_to_db = await create_connection(logging)
     cursor = await create_table(connection_to_db, logging)
     request = f'select * from users where userid is {user_id}'
@@ -71,7 +88,8 @@ async def get_user_location(user_id: int) -> Coordinates|None:
     else:
         return None
 
-async def get_weather_db(user_id: int) -> Coordinates|None:
+
+async def get_weather_db(user_id: int) -> Coordinates | None:
     connection_to_db = await create_connection(logging)
     cursor = await create_table(connection_to_db, logging)
     request = f'select * from users where userid is {user_id}'

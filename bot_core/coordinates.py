@@ -1,5 +1,5 @@
-from typing import NamedTuple, Dict
-import aiohttp
+from typing import NamedTuple
+
 
 class Coordinates(NamedTuple):
     latitude: float
